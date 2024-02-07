@@ -70,4 +70,16 @@ contract StakingRewardsV2Test is Test {
         assertEq(stakingRewards.totalSupply(), 10);
         stakingRewards.rewardPerToken();
     }
+
+    // 32,060
+    function testStakeFail() public {
+        vm.expectRevert(StakingRewardsV2.InvalidAmount.selector);
+        stakingRewards.stake(0);
+    }
+
+    // 30,003
+    function testWithdrawFail() public {
+        vm.expectRevert(StakingRewardsV2.InvalidAmount.selector);
+        stakingRewards.withdraw(0);
+    }
 }

@@ -69,8 +69,9 @@ contract StakingRewardsV2 is IStakingRewards, RewardsDistributionRecipient, Reen
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function stake(uint256 amount) external nonReentrant whenNotPaused updateReward(msg.sender) {
+        if (amount == 0) revert InvalidAmount();
         // @note custom error
-        require(amount > 0, "Cannot stake 0");
+        // require(amount > 0, "Cannot stake 0");
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
         _totalSupply = _totalSupply + amount;
         _balances[msg.sender] = _balances[msg.sender] + amount;
@@ -78,8 +79,9 @@ contract StakingRewardsV2 is IStakingRewards, RewardsDistributionRecipient, Reen
     }
 
     function withdraw(uint256 amount) public nonReentrant updateReward(msg.sender) {
+        if (amount == 0) revert InvalidAmount();
         // @note custom error
-        require(amount > 0, "Cannot withdraw 0");
+        // require(amount > 0, "Cannot withdraw 0");
         _totalSupply = _totalSupply - amount;
         _balances[msg.sender] = _balances[msg.sender] - amount;
         emit Withdrawn(msg.sender, amount);

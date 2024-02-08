@@ -15,10 +15,10 @@ contract StakingRewardsV2 is IStakingRewards, RewardsDistributionRecipient, Reen
 
     IERC20 public immutable rewardsToken;
     IERC20 public immutable stakingToken;
-    uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
-    uint256 public rewardsDuration = 7 days;
-    uint256 public lastUpdateTime;
+    uint80 public periodFinish = 0;
+    uint80 public rewardsDuration = 7 days;
+    uint80 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
 
     mapping(address => uint256) public userRewardPerTokenPaid;
@@ -121,8 +121,8 @@ contract StakingRewardsV2 is IStakingRewards, RewardsDistributionRecipient, Reen
         // @note custom error
         // require(rewardRate <= balance / _rewardsDuration, "Provided reward too high");
 
-        lastUpdateTime = block.timestamp;
-        periodFinish = block.timestamp + _rewardsDuration;
+        lastUpdateTime = uint80(block.timestamp);
+        periodFinish = uint80(block.timestamp + _rewardsDuration);
         emit RewardAdded(reward);
     }
 
@@ -142,7 +142,7 @@ contract StakingRewardsV2 is IStakingRewards, RewardsDistributionRecipient, Reen
         //     block.timestamp > periodFinish,
         //     "Previous rewards period must be complete before changing the duration for the new period"
         // );
-        rewardsDuration = _rewardsDuration;
+        rewardsDuration = uint80(_rewardsDuration);
         // @note replace `rewardsDuration` with `_rewardsDuration`
         emit RewardsDurationUpdated(_rewardsDuration);
     }
@@ -151,7 +151,7 @@ contract StakingRewardsV2 is IStakingRewards, RewardsDistributionRecipient, Reen
 
     modifier updateReward(address account) {
         rewardPerTokenStored = rewardPerToken();
-        lastUpdateTime = lastTimeRewardApplicable();
+        lastUpdateTime = uint80(lastTimeRewardApplicable());
         if (account != address(0)) {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;

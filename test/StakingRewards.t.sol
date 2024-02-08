@@ -31,6 +31,7 @@ contract StakingRewardsTest is Test {
         new StakingRewards(address(0),address(0),address(0),address(0));
     }
 
+    // 15,807
     function testSetRewardsDuration() public {
         stakingRewards.setRewardsDuration(1 days);
     }

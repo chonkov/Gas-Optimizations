@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {StakingRewardsV2} from "../src/StakingRewards/StakingRewardsV2.sol";
+import {StakingRewardsV2} from "../../src/StakingRewards/StakingRewardsV2.sol";
 import {ERC20, IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 contract Token is ERC20 {

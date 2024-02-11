@@ -16,6 +16,7 @@ contract StakingRewardsV2 is IStakingRewards, RewardsDistributionRecipient, Reen
     IERC20 public immutable rewardsToken;
     IERC20 public immutable stakingToken;
     uint256 public rewardRate = 0;
+    // @note Re-ordered variables and packed them into a single slot
     uint80 public periodFinish = 0;
     uint80 public rewardsDuration = 7 days;
     uint80 public lastUpdateTime;

@@ -268,12 +268,12 @@ contract DistributorV2 is ReentrancyGuard {
 
         // Calculate pending rewards and amount to transfer (to the sender)
         uint256 pendingRewards =
-            ((userInfo[msg.sender].amount * accTokenPerShare) / PRECISION_FACTOR) - userInfo[msg.sender].rewardDebt;
+            ((currentUserAmount * accTokenPerShare) / PRECISION_FACTOR) - userInfo[msg.sender].rewardDebt;
 
-        uint256 amountToTransfer = userInfo[msg.sender].amount + pendingRewards;
+        uint256 amountToTransfer = currentUserAmount + pendingRewards;
 
         // Adjust total amount staked
-        totalAmountStaked = totalAmountStaked - userInfo[msg.sender].amount;
+        totalAmountStaked = totalAmountStaked - currentUserAmount;
 
         // Adjust user information
         userInfo[msg.sender].amount = 0;

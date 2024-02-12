@@ -128,4 +128,51 @@ contract DistributorV2Test is Test {
 
         vm.stopPrank();
     }
+
+    //  18,064
+    function testWithdrawAllDistributorFail() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        distributor.withdrawAll();
+    }
+
+    //  148,753
+    function testWithdrawAllDistributor() public {
+        uint256 startBlock = 7;
+        uint256 amount = 100e18;
+
+        vm.roll(startBlock);
+
+        vm.startPrank(alice);
+        token.approve(address(distributor), amount);
+        distributor.deposit(amount);
+
+        vm.roll(startBlock + 2);
+
+        distributor.withdrawAll();
+
+        vm.stopPrank();
+    }
+
+    function testPendingRewards() public {
+        uint256 startBlock = 7;
+        uint256 amount = 100e18;
+
+        vm.roll(startBlock);
+
+        vm.startPrank(alice);
+        token.approve(address(distributor), amount);
+        distributor.deposit(amount);
+        vm.stopPrank();
+
+        vm.roll(startBlock + 2);
+
+        uint256 rewards = distributor.calculatePendingRewards(alice);
+        uint256 accTokenPerShare = distributor.accTokenPerShare();
+        uint256 endBlock = distributor.endBlock();
+
+        console2.log(rewards / 1e18);
+        console2.log(endBlock);
+        console2.log(accTokenPerShare);
+    }
 }

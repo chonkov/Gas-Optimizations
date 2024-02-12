@@ -128,4 +128,29 @@ contract DistributorTest is Test {
 
         vm.stopPrank();
     }
+
+    //  18,085
+    function testWithdrawAllDistributorFail() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        distributor.withdrawAll();
+    }
+
+    //  149,552
+    function testWithdrawAllDistributor() public {
+        uint256 startBlock = 7;
+        uint256 amount = 100e18;
+
+        vm.roll(startBlock);
+
+        vm.startPrank(alice);
+        token.approve(address(distributor), amount);
+        distributor.deposit(amount);
+
+        vm.roll(startBlock + 2);
+
+        distributor.withdrawAll();
+
+        vm.stopPrank();
+    }
 }

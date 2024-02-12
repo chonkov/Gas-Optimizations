@@ -50,7 +50,7 @@ contract DistributorV2Test is Test {
         vm.stopPrank();
     }
 
-    // 214,015 - Over 800 gas saved. Second deposit in optimized contract saves 7 sloads
+    // 213,991 - Over 800 gas saved. Second deposit in optimized contract saves 7 sloads
     function testMultipleDeposit() public {
         uint256 startBlock = 7;
         uint256 amount = 100e18;

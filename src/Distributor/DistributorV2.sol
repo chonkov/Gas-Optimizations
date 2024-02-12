@@ -149,24 +149,27 @@ contract DistributorV2 is ReentrancyGuard {
         // Transfer LOOKS tokens to this contract
         looksRareToken.safeTransferFrom(msg.sender, address(this), amount);
 
-        // @note Cache `userInfo[msg.sender].amount` & save two warm sloads on line 165 & 166
-        // @note Only during the initial deposit, only one warm sload will be saved due to line 158
+        // @note Cache `userInfo[msg.sender].amount` & save two warm sloads on line 167 & 168
+        // @note During the initial deposit, only one warm sload will be saved due to line 161
         uint256 currentUserAmount = userInfo[msg.sender].amount;
         uint256 pendingRewards;
+
+        // @note Cache `accTokenPerShare`
+        uint256 _accTokenPerShare = accTokenPerShare;
 
         // If not new deposit, calculate pending rewards (for auto-compounding)
         if (currentUserAmount > 0) {
             pendingRewards =
-                ((currentUserAmount * accTokenPerShare) / PRECISION_FACTOR) - userInfo[msg.sender].rewardDebt;
+                ((currentUserAmount * _accTokenPerShare) / PRECISION_FACTOR) - userInfo[msg.sender].rewardDebt;
         }
 
         // Adjust user information
         uint256 newUserAmount = currentUserAmount + amount + pendingRewards;
         userInfo[msg.sender].amount = newUserAmount;
-        userInfo[msg.sender].rewardDebt = (newUserAmount * accTokenPerShare) / PRECISION_FACTOR;
+        userInfo[msg.sender].rewardDebt = (newUserAmount * _accTokenPerShare) / PRECISION_FACTOR;
 
         // Increase totalAmountStaked
-        totalAmountStaked += (amount + pendingRewards);
+        totalAmountStaked = totalAmountStaked + (amount + pendingRewards);
 
         emit Deposit(msg.sender, amount, pendingRewards);
     }
@@ -332,9 +335,12 @@ contract DistributorV2 is ReentrancyGuard {
         // Calculate multiplier
         uint256 multiplier = _getMultiplier(_lastRewardBlock, block.number);
 
+        uint256 _rewardPerBlockForStaking = rewardPerBlockForStaking;
+        uint256 _rewardPerBlockForOthers = rewardPerBlockForOthers;
+
         // Calculate rewards for staking and others
-        uint256 tokenRewardForStaking = multiplier * rewardPerBlockForStaking;
-        uint256 tokenRewardForOthers = multiplier * rewardPerBlockForOthers;
+        uint256 tokenRewardForStaking = multiplier * _rewardPerBlockForStaking;
+        uint256 tokenRewardForOthers = multiplier * _rewardPerBlockForOthers;
 
         // Check whether to adjust multipliers and reward per block
         // @note Don't fully understand while loop
@@ -345,14 +351,14 @@ contract DistributorV2 is ReentrancyGuard {
             uint256 previousEndBlock = endBlock;
 
             // Adjust the end block
-            endBlock += stakingPeriod[currentPhase].periodLengthInBlock;
+            endBlock = endBlock + stakingPeriod[currentPhase].periodLengthInBlock;
 
             // Adjust multiplier to cover the missing periods with other lower inflation schedule
             uint256 newMultiplier = _getMultiplier(previousEndBlock, block.number);
 
             // Adjust token rewards
-            tokenRewardForStaking += (newMultiplier * rewardPerBlockForStaking);
-            tokenRewardForOthers += (newMultiplier * rewardPerBlockForOthers);
+            tokenRewardForStaking += (newMultiplier * _rewardPerBlockForStaking);
+            tokenRewardForOthers += (newMultiplier * _rewardPerBlockForOthers);
         }
 
         // Mint tokens only if token rewards for staking are not null
@@ -378,7 +384,9 @@ contract DistributorV2 is ReentrancyGuard {
      */
     function _updateRewardsPerBlock(uint256 _newStartBlock) internal {
         // Update current phase
-        currentPhase++;
+        unchecked {
+            ++currentPhase;
+        }
 
         // Update rewards per block
         rewardPerBlockForStaking = stakingPeriod[currentPhase].rewardPerBlockForStaking;

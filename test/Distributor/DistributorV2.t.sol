@@ -69,4 +69,38 @@ contract DistributorV2Test is Test {
         distributor.deposit(amount);
         vm.stopPrank();
     }
+
+    //  16,295
+    function testDepositFail() public {
+        uint256 startBlock = 7;
+        vm.roll(startBlock);
+
+        vm.prank(alice);
+        vm.expectRevert();
+        distributor.deposit(0);
+    }
+
+    //  248,970 - Almost 2k gas saved
+    function testHarvestAndCompound() public {
+        uint256 startBlock = 7;
+        uint256 amount = 100e18;
+
+        vm.roll(startBlock);
+
+        vm.startPrank(alice);
+        token.approve(address(distributor), amount);
+        distributor.deposit(amount);
+        vm.stopPrank();
+
+        vm.roll(startBlock + 2);
+
+        vm.startPrank(bob);
+        token.approve(address(distributor), amount);
+        distributor.deposit(amount);
+        vm.stopPrank();
+
+        vm.roll(startBlock + 3);
+        vm.prank(alice);
+        distributor.harvestAndCompound();
+    }
 }

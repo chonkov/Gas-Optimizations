@@ -14,6 +14,8 @@ contract DistributorV2 is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeERC20 for LooksRareToken;
 
+    error DistributorV2_InvalidAmount(uint256);
+
     struct StakingPeriod {
         uint256 rewardPerBlockForStaking;
         uint256 rewardPerBlockForOthers;
@@ -141,7 +143,8 @@ contract DistributorV2 is ReentrancyGuard {
      */
     function deposit(uint256 amount) external nonReentrant {
         // @note Custom error
-        require(amount > 0, "Deposit: Amount must be > 0");
+        if (amount == 0) revert DistributorV2_InvalidAmount(amount);
+        //   require(amount > 0, "Deposit: Amount must be > 0");
 
         // Update pool information
         _updatePool();
@@ -181,9 +184,14 @@ contract DistributorV2 is ReentrancyGuard {
         // Update pool information
         _updatePool();
 
+        // @note Cache `userInfo[msg.sender].amount`
+        uint256 currentUserAmount = userInfo[msg.sender].amount;
+        // @note Cache `accTokenPerShare`
+        uint256 _accTokenPerShare = accTokenPerShare;
+
         // Calculate pending rewards
         uint256 pendingRewards =
-            ((userInfo[msg.sender].amount * accTokenPerShare) / PRECISION_FACTOR) - userInfo[msg.sender].rewardDebt;
+            ((currentUserAmount * _accTokenPerShare) / PRECISION_FACTOR) - userInfo[msg.sender].rewardDebt;
 
         // Return if no pending rewards
         if (pendingRewards == 0) {
@@ -192,13 +200,14 @@ contract DistributorV2 is ReentrancyGuard {
         }
 
         // Adjust user amount for pending rewards
-        userInfo[msg.sender].amount += pendingRewards;
+        uint256 newUserAmount = currentUserAmount + pendingRewards;
+        userInfo[msg.sender].amount = newUserAmount;
 
         // Adjust totalAmountStaked
-        totalAmountStaked += pendingRewards;
+        totalAmountStaked = totalAmountStaked + pendingRewards;
 
         // Recalculate reward debt based on new user amount
-        userInfo[msg.sender].rewardDebt = (userInfo[msg.sender].amount * accTokenPerShare) / PRECISION_FACTOR;
+        userInfo[msg.sender].rewardDebt = (newUserAmount * _accTokenPerShare) / PRECISION_FACTOR;
 
         emit Compound(msg.sender, pendingRewards);
     }
@@ -215,6 +224,7 @@ contract DistributorV2 is ReentrancyGuard {
      * @param amount amount to withdraw
      */
     function withdraw(uint256 amount) external nonReentrant {
+        // @note Custom error
         require(
             (userInfo[msg.sender].amount >= amount) && (amount > 0),
             "Withdraw: Amount must be > 0 or lower than user balance"

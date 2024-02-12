@@ -224,22 +224,26 @@ contract DistributorV2 is ReentrancyGuard {
      * @param amount amount to withdraw
      */
     function withdraw(uint256 amount) external nonReentrant {
+        uint256 currentUserAmount = userInfo[msg.sender].amount;
         // @note Custom error
-        require(
-            (userInfo[msg.sender].amount >= amount) && (amount > 0),
-            "Withdraw: Amount must be > 0 or lower than user balance"
-        );
+        if (amount == 0 || currentUserAmount < amount) revert DistributorV2_InvalidAmount(amount);
+        //   require(
+        //       (userInfo[msg.sender].amount >= amount) && (amount > 0),
+        //       "Withdraw: Amount must be > 0 or lower than user balance"
+        //   );
 
         // Update pool
         _updatePool();
 
+        uint256 _accTokenPerShare = accTokenPerShare;
+
         // Calculate pending rewards
         uint256 pendingRewards =
-            ((userInfo[msg.sender].amount * accTokenPerShare) / PRECISION_FACTOR) - userInfo[msg.sender].rewardDebt;
+            ((currentUserAmount * _accTokenPerShare) / PRECISION_FACTOR) - userInfo[msg.sender].rewardDebt;
 
         // Adjust user information
-        userInfo[msg.sender].amount = userInfo[msg.sender].amount + pendingRewards - amount;
-        userInfo[msg.sender].rewardDebt = (userInfo[msg.sender].amount * accTokenPerShare) / PRECISION_FACTOR;
+        userInfo[msg.sender].amount = currentUserAmount + pendingRewards - amount;
+        userInfo[msg.sender].rewardDebt = (currentUserAmount * _accTokenPerShare) / PRECISION_FACTOR;
 
         // Adjust total amount staked
         totalAmountStaked = totalAmountStaked + pendingRewards - amount;
@@ -254,7 +258,10 @@ contract DistributorV2 is ReentrancyGuard {
      * @notice Withdraw all staked tokens and collect tokens
      */
     function withdrawAll() external nonReentrant {
-        require(userInfo[msg.sender].amount > 0, "Withdraw: Amount must be > 0");
+        uint256 currentUserAmount = userInfo[msg.sender].amount;
+        // @note Custom error
+        if (currentUserAmount == 0) revert DistributorV2_InvalidAmount(currentUserAmount);
+        //   require(userInfo[msg.sender].amount > 0, "Withdraw: Amount must be > 0");
 
         // Update pool
         _updatePool();
@@ -353,18 +360,16 @@ contract DistributorV2 is ReentrancyGuard {
         uint256 tokenRewardForOthers = multiplier * _rewardPerBlockForOthers;
 
         // Check whether to adjust multipliers and reward per block
-        // @note Don't fully understand while loop
-        while ((block.number > endBlock) && (currentPhase < (NUMBER_PERIODS - 1))) {
+        uint256 _endBlock = endBlock;
+        while ((block.number > _endBlock) && (currentPhase < (NUMBER_PERIODS - 1))) {
             // Update rewards per block
-            _updateRewardsPerBlock(endBlock);
-
-            uint256 previousEndBlock = endBlock;
+            _updateRewardsPerBlock(_endBlock);
 
             // Adjust the end block
-            endBlock = endBlock + stakingPeriod[currentPhase].periodLengthInBlock;
+            endBlock = _endBlock + stakingPeriod[currentPhase].periodLengthInBlock;
 
             // Adjust multiplier to cover the missing periods with other lower inflation schedule
-            uint256 newMultiplier = _getMultiplier(previousEndBlock, block.number);
+            uint256 newMultiplier = _getMultiplier(_endBlock, block.number);
 
             // Adjust token rewards
             tokenRewardForStaking += (newMultiplier * _rewardPerBlockForStaking);

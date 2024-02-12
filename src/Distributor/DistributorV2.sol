@@ -291,8 +291,11 @@ contract DistributorV2 is ReentrancyGuard {
      * @return Pending rewards
      */
     function calculatePendingRewards(address user) external view returns (uint256) {
-        if ((block.number > lastRewardBlock) && (totalAmountStaked != 0)) {
-            uint256 multiplier = _getMultiplier(lastRewardBlock, block.number);
+        uint256 _lastRewardBlock = lastRewardBlock;
+        uint256 _totalAmountStaked = totalAmountStaked;
+
+        if ((block.number > _lastRewardBlock) && (_totalAmountStaked != 0)) {
+            uint256 multiplier = _getMultiplier(_lastRewardBlock, block.number);
 
             uint256 tokenRewardForStaking = multiplier * rewardPerBlockForStaking;
 
@@ -310,20 +313,20 @@ contract DistributorV2 is ReentrancyGuard {
                 // Calculate adjusted block number
                 uint256 previousEndBlock = adjustedEndBlock;
 
+                uint256 period = stakingPeriod[adjustedCurrentPhase].periodLengthInBlock;
+
                 // Update end block
-                adjustedEndBlock = previousEndBlock + stakingPeriod[adjustedCurrentPhase].periodLengthInBlock;
+                adjustedEndBlock = previousEndBlock + period;
 
                 // Calculate new multiplier
-                uint256 newMultiplier = (block.number <= adjustedEndBlock)
-                    ? (block.number - previousEndBlock)
-                    : stakingPeriod[adjustedCurrentPhase].periodLengthInBlock;
+                uint256 newMultiplier = (block.number <= adjustedEndBlock) ? (block.number - previousEndBlock) : period;
 
                 // Adjust token rewards for staking
                 tokenRewardForStaking += (newMultiplier * adjustedRewardPerBlockForStaking);
             }
 
             uint256 adjustedTokenPerShare =
-                accTokenPerShare + (tokenRewardForStaking * PRECISION_FACTOR) / totalAmountStaked;
+                accTokenPerShare + (tokenRewardForStaking * PRECISION_FACTOR) / _totalAmountStaked;
 
             return (userInfo[user].amount * adjustedTokenPerShare) / PRECISION_FACTOR - userInfo[user].rewardDebt;
         } else {
@@ -417,12 +420,14 @@ contract DistributorV2 is ReentrancyGuard {
      * @return the multiplier for the period
      */
     function _getMultiplier(uint256 from, uint256 to) internal view returns (uint256) {
-        if (to <= endBlock) {
+        // @note Cache `endBlock`
+        uint256 _endBlock = endBlock;
+        if (to <= _endBlock) {
             return to - from;
-        } else if (from >= endBlock) {
+        } else if (from >= _endBlock) {
             return 0;
         } else {
-            return endBlock - from;
+            return _endBlock - from;
         }
     }
 }

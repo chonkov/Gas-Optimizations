@@ -154,6 +154,7 @@ contract DistributorV2Test is Test {
         vm.stopPrank();
     }
 
+    //  113,824
     function testPendingRewards() public {
         uint256 startBlock = 7;
         uint256 amount = 100e18;
@@ -168,11 +169,6 @@ contract DistributorV2Test is Test {
         vm.roll(startBlock + 2);
 
         uint256 rewards = distributor.calculatePendingRewards(alice);
-        uint256 accTokenPerShare = distributor.accTokenPerShare();
-        uint256 endBlock = distributor.endBlock();
-
-        console2.log(rewards / 1e18);
-        console2.log(endBlock);
-        console2.log(accTokenPerShare);
+        assertEq(rewards, 2e18);
     }
 }

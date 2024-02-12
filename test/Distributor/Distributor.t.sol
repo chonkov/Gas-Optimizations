@@ -153,4 +153,22 @@ contract DistributorTest is Test {
 
         vm.stopPrank();
     }
+
+    //  114,287
+    function testPendingRewards() public {
+        uint256 startBlock = 7;
+        uint256 amount = 100e18;
+
+        vm.roll(startBlock);
+
+        vm.startPrank(alice);
+        token.approve(address(distributor), amount);
+        distributor.deposit(amount);
+        vm.stopPrank();
+
+        vm.roll(startBlock + 2);
+
+        uint256 rewards = distributor.calculatePendingRewards(alice);
+        assertEq(rewards, 2e18);
+    }
 }
